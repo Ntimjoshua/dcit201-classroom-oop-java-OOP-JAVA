@@ -1,0 +1,224 @@
+
+1): Project Setup
+
+Use Maven or Gradle to create a new Java project.
+
+Set up a package structure like this:
+
+com.vehicle.rental
+    ├── base (abstract base classes, interfaces)
+    ├── vehicles (concrete vehicle classes)
+    ├── services (RentalAgency and related services)
+    ├── models (Customer, RentalTransaction)
+    ├── tests (JUnit test cases)
+
+
+2): Create Abstract Base Class (Vehicle)
+
+Here’s an example to get you started:
+
+package com.vehicle.rental.base;
+
+public abstract class Vehicle {
+    private String vehicleId;
+    private String model;
+    private double baseRentalRate;
+    private boolean isAvailable;
+
+    public Vehicle(String vehicleId, String model, double baseRentalRate) {
+        this.vehicleId = vehicleId;
+        this.model = model;
+        this.baseRentalRate = baseRentalRate;
+        this.isAvailable = true; // Default availability
+    }
+
+    public String getVehicleId() {
+        return vehicleId;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public double getBaseRentalRate() {
+        return baseRentalRate;
+    }
+
+    public boolean isAvailable() {
+        return isAvailable;
+    }
+
+    public void setAvailability(boolean available) {
+        this.isAvailable = available;
+    }
+
+    public abstract double calculateRentalCost(int days);
+
+    public abstract boolean isAvailableForRental();
+
+    @Override
+    public String toString() {
+        return "Vehicle{" +
+               "vehicleId='" + vehicleId + '\'' +
+               ", model='" + model + '\'' +
+               ", baseRentalRate=" + baseRentalRate +
+               ", isAvailable=" + isAvailable +
+               '}';
+    }
+}
+
+
+---
+
+3): Concrete Vehicle Classes (Car, Motorcycle, Truck)
+
+Each class will override abstract methods and implement unique features. Example for Car:
+
+package com.vehicle.rental.vehicles;
+
+import com.vehicle.rental.base.Vehicle;
+
+public class Car extends Vehicle {
+    private int seatingCapacity;
+
+    public Car(String vehicleId, String model, double baseRentalRate, int seatingCapacity) {
+        super(vehicleId, model, baseRentalRate);
+        this.seatingCapacity = seatingCapacity;
+    }
+
+    public int getSeatingCapacity() {
+        return seatingCapacity;
+    }
+
+    public void setSeatingCapacity(int seatingCapacity) {
+        if (seatingCapacity <= 0) {
+            throw new IllegalArgumentException("Seating capacity must be positive");
+        }
+        this.seatingCapacity = seatingCapacity;
+    }
+
+    @Override
+    public double calculateRentalCost(int days) {
+        return getBaseRentalRate() * days;
+    }
+
+    @Override
+    public boolean isAvailableForRental() {
+        return isAvailable();
+    }
+
+    @Override
+    public String toString() {
+        return "Car{" +
+               "seatingCapacity=" + seatingCapacity +
+               ", " + super.toString() +
+               '}';
+    }
+}
+
+
+---
+
+4): Create the Customer Class
+
+Tracks rental history and checks eligibility.
+
+package com.vehicle.rental.models;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Customer {
+    private String customerId;
+    private String name;
+    private List<String> rentalHistory;
+
+    public Customer(String customerId, String name) {
+        this.customerId = customerId;
+        this.name = name;
+        this.rentalHistory = new ArrayList<>();
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void addRental(String vehicleId) {
+        rentalHistory.add(vehicleId);
+    }
+
+    public List<String> getRentalHistory() {
+        return rentalHistory;
+    }
+
+    public boolean isEligibleForRental() {
+        // Custom eligibility logic
+        return rentalHistory.size() < 5; // Example: Limit to 5 rentals
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+               "customerId='" + customerId + '\'' +
+               ", name='" + name + '\'' +
+               ", rentalHistory=" + rentalHistory +
+               '}';
+    }
+}
+
+
+---
+
+Step 5: Implement the RentalAgency Class
+
+Manages rentals and business logic.
+
+package com.vehicle.rental.services;
+
+import com.vehicle.rental.base.Vehicle;
+import com.vehicle.rental.models.Customer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class RentalAgency {
+    private List<Vehicle> fleet;
+    private List<String> transactions;
+
+    public RentalAgency() {
+        this.fleet = new ArrayList<>();
+        this.transactions = new ArrayList<>();
+    }
+
+    public void addVehicle(Vehicle vehicle) {
+        fleet.add(vehicle);
+    }
+
+    public void rentVehicle(String vehicleId, Customer customer, int days) {
+        for (Vehicle vehicle : fleet) {
+            if (vehicle.getVehicleId().equals(vehicleId) && vehicle.isAvailable()) {
+                vehicle.setAvailability(false);
+                double cost = vehicle.calculateRentalCost(days);
+                customer.addRental(vehicleId);
+                transactions.add("Rented: " + vehicleId + " to " + customer.getName() + " for $" + cost);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Vehicle not available");
+    }
+
+    public List<String> getTransactions() {
+        return transactions;
+    }
+
+    @Override
+    public String toString() {
+        return "RentalAgency{" +
+               "fleet=" + fleet +
+               ", transactions=" + transactions +
+               '}';
+    
